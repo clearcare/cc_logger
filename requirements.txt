@@ -1,0 +1,1 @@
+git+https://github.com/shokunin/python-logstash-formatter.git@3c3d218226#egg=logstash_formatter
