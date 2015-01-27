@@ -4,7 +4,9 @@ setup(
     name = 'cc_logger',
     packages=find_packages(),
     install_requires=[
-        'logstash_formatter',
+        # can't set this since it'd pick up the pypi version, and we need the one below.
+        # make sure to pip install -r requirements
+        # 'logstash_formatter',
     ],
     tests_require=['pytest'],
     dependency_links=[
