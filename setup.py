@@ -13,7 +13,7 @@ setup(
         #'git+https://github.com/shokunin/python-logstash-formatter.git#egg=logstash_formatter',
         'git+https://github.com/shokunin/python-logstash-formatter.git@3c3d218226#egg=logstash_formatter',
     ],
-    version = '0.0.1',
+    version = '0.0.2',
     description = 'General logging system to send events and stats the Clearcare way',
     author='Brian Zambrano',
     author_email='brianz@clearcareonline.com',

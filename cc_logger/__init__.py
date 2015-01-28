@@ -31,6 +31,7 @@ class CCLogstashLogger(DefaultLoggerClass):
         extra.update({
             'DTM_EVENT': event_name,
             'app_name': self.name,
+            'environment': self.environment,
         })
         self.log(LOGSTASH, 'event: %s' % event_name, extra=extra)
 
@@ -40,6 +41,7 @@ class CCLogstashLogger(DefaultLoggerClass):
             'app_name': self.name,
             'stat_value': timer_value,
             'stat_type': 'timer',
+            'environment': self.environment,
         })
         self.log(LOGSTASH, 'timer: %s: %s' % (timer_name, timer_value), extra=extra)
 
@@ -48,6 +50,7 @@ class CCLogstashLogger(DefaultLoggerClass):
             'DTM_STATS': counter_name,
             'app_name': self.name,
             'stat_type': 'counter',
+            'environment': self.environment,
         })
         self.log(LOGSTASH, 'counter: %s' % counter_name, extra=extra)
 
@@ -57,6 +60,7 @@ class CCLogstashLogger(DefaultLoggerClass):
             'app_name': self.name,
             'stat_value': gauge_value,
             'stat_type': 'gauge',
+            'environment': self.environment,
         })
         self.log(LOGSTASH, 'gauge: %s' % gauge_name, extra=extra)
 
@@ -64,12 +68,13 @@ class CCLogstashLogger(DefaultLoggerClass):
 logging.setLoggerClass(CCLogstashLogger)
 
 
-def create_logger(name, filehandler_config, stream_config=None, level=logging.WARNING):
+def create_logger(name, filehandler_config, environment='', stream_config=None, level=logging.WARNING):
     if name in _log_registy:
         return _log_registy[name]
 
     with _log_lock:
         logger = logging.getLogger(name)
+        logger.environment = environment
         logger.setLevel(level)
 
         logstash_formatter = LogstashFormatter()
