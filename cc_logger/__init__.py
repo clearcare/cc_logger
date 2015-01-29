@@ -11,7 +11,7 @@ _log_registy = {}
 
 DefaultLoggerClass = logging.getLoggerClass()
 
-LOGSTASH = logging.ERROR + 1
+LOGSTASH = logging.INFO + 1
 logging.addLevelName(LOGSTASH, 'LOGSTASH')
 
 
@@ -68,9 +68,12 @@ class CCLogstashLogger(DefaultLoggerClass):
 logging.setLoggerClass(CCLogstashLogger)
 
 
-def create_logger(name, filehandler_config, environment='', stream_config=None, level=logging.WARNING):
+def create_logger(name, filehandler_config, environment='', stream_config=None, level=None):
     if name in _log_registy:
         return _log_registy[name]
+
+    if level is None:
+        level = LOGSTASH
 
     with _log_lock:
         logger = logging.getLogger(name)
