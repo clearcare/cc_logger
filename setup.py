@@ -10,7 +10,6 @@ setup(
     ],
     tests_require=['pytest'],
     dependency_links=[
-        #'git+https://github.com/shokunin/python-logstash-formatter.git#egg=logstash_formatter',
         'git+https://github.com/shokunin/python-logstash-formatter.git@3c3d218226#egg=logstash_formatter',
     ],
     version = '0.0.3',
