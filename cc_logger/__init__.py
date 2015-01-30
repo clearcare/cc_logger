@@ -1,5 +1,6 @@
 import logging
 import logging.handlers
+import re
 
 from logstash_formatter import LogstashFormatter
 
@@ -14,6 +15,12 @@ DefaultLoggerClass = logging.getLoggerClass()
 LOGSTASH = logging.INFO + 1
 logging.addLevelName(LOGSTASH, 'LOGSTASH')
 
+_spaces_re = re.compile(r'\s+')
+
+
+def sanitize_name(name):
+    return _spaces_re.sub('_', name.strip())
+
 
 class CCLogstashLogger(DefaultLoggerClass):
 
@@ -24,10 +31,11 @@ class CCLogstashLogger(DefaultLoggerClass):
         if not name.strip():
             raise ValueError('name must be non-empty')
 
-        self.name = name
-        logging.Logger.__init__(self, name, **kwargs)
+        self.name = sanitize_name(name)
+        logging.Logger.__init__(self, self.name, **kwargs)
 
     def event(self, event_name, **extra):
+        event_name = sanitize_name(event_name)
         extra.update({
             'DTM_EVENT': event_name,
             'app_name': self.name,
@@ -36,6 +44,7 @@ class CCLogstashLogger(DefaultLoggerClass):
         self.log(LOGSTASH, 'event: %s' % event_name, extra=extra)
 
     def timer(self, timer_name, timer_value, **extra):
+        timer_name = sanitize_name(timer_name)
         extra.update({
             'DTM_STATS': timer_name,
             'app_name': self.name,
@@ -46,6 +55,7 @@ class CCLogstashLogger(DefaultLoggerClass):
         self.log(LOGSTASH, 'timer: %s: %s' % (timer_name, timer_value), extra=extra)
 
     def counter(self, counter_name, **extra):
+        counter_name = sanitize_name(counter_name)
         extra.update({
             'DTM_STATS': counter_name,
             'app_name': self.name,
@@ -55,6 +65,7 @@ class CCLogstashLogger(DefaultLoggerClass):
         self.log(LOGSTASH, 'counter: %s' % counter_name, extra=extra)
 
     def gauge(self, gauge_name, gauge_value, **extra):
+        gauge_name = sanitize_name(gauge_name)
         extra.update({
             'DTM_STATS': gauge_name,
             'app_name': self.name,
@@ -77,7 +88,7 @@ def create_logger(name, filehandler_config, environment='', stream_config=None, 
 
     with _log_lock:
         logger = logging.getLogger(name)
-        logger.environment = environment
+        logger.environment = sanitize_name(environment)
         logger.setLevel(level)
 
         logstash_formatter = LogstashFormatter()
