@@ -99,12 +99,11 @@ def create_logger(name, filehandler_config=None, environment='', stream_config=N
             fh_handler.setFormatter(logstash_formatter)
             logger.addHandler(fh_handler)
 
-        if stream_config:
-            stream_handler = logging.StreamHandler(stream=stream_config.get('stream'))
-            stream_handler.setLevel(stream_config.get('level', level))
-            stream_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            stream_handler.setFormatter(stream_formatter)
-            logger.addHandler(stream_handler)
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.DEBUG)
+        stream_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        stream_handler.setFormatter(stream_formatter)
+        logger.addHandler(stream_handler)
 
         _log_registy[name] = logger
         return logger
