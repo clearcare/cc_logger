@@ -79,7 +79,7 @@ class CCLogstashLogger(DefaultLoggerClass):
 logging.setLoggerClass(CCLogstashLogger)
 
 
-def create_logger(name, filehandler_config, environment='', stream_config=None, level=None):
+def create_logger(name, filehandler_config=None, environment='', stream_config=None, level=None):
     if name in _log_registy:
         return _log_registy[name]
 
@@ -93,10 +93,11 @@ def create_logger(name, filehandler_config, environment='', stream_config=None, 
 
         logstash_formatter = LogstashFormatter()
 
-        fh_handler = logging.handlers.RotatingFileHandler(**filehandler_config)
-        fh_handler.setLevel(level)
-        fh_handler.setFormatter(logstash_formatter)
-        logger.addHandler(fh_handler)
+        if filehandler_config:
+            fh_handler = logging.handlers.RotatingFileHandler(**filehandler_config)
+            fh_handler.setLevel(level)
+            fh_handler.setFormatter(logstash_formatter)
+            logger.addHandler(fh_handler)
 
         if stream_config:
             stream_handler = logging.StreamHandler(stream=stream_config.get('stream'))
