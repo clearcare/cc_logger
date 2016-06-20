@@ -1,8 +1,7 @@
 import logging
 import logging.handlers
 import re
-
-from logstash_formatter import LogstashFormatter
+from logging.config import dictConfig
 
 from threading import Lock
 
@@ -79,32 +78,42 @@ class CCLogstashLogger(DefaultLoggerClass):
 logging.setLoggerClass(CCLogstashLogger)
 
 
-def create_logger(name, filehandler_config=None, environment='', stream_config=None, level=None):
+def create_logger(name, environment='', level=None):
+    base_config = {
+        u'version': 1,
+        u'formatters': {
+            u'logstashformatter': {
+                u'()': u'logstash_formatter.LogstashFormatter'
+            },
+        },
+        u'handlers': {
+            u'console': {
+                u'class': u'logging.StreamHandler',
+                u'level': u'DEBUG',
+                u'formatter': u'logstashformatter',
+                u'stream': u'ext://sys.stdout',
+            },
+        },
+        u'disable_existing_loggers': False,
+    }
+
     if name in _log_registy:
         return _log_registy[name]
 
     if level is None:
         level = LOGSTASH
 
+    # Set up a new logger and add all of the handlers to it.
+    loggers = base_config.get(u'loggers', {})
+    loggers[name] = {
+        u'level': level,
+        u'handlers': [base_handler for base_handler in base_config.get(u'handlers', [])],
+    }
+    base_config[u'loggers'] = loggers
+    dictConfig(base_config)
+
     with _log_lock:
         logger = logging.getLogger(name)
-        logger.environment = sanitize_name(environment)
-        logger.setLevel(level)
-
-        logstash_formatter = LogstashFormatter()
-
-        if filehandler_config:
-            fh_handler = logging.handlers.RotatingFileHandler(**filehandler_config)
-            fh_handler.setLevel(level)
-            fh_handler.setFormatter(logstash_formatter)
-            logger.addHandler(fh_handler)
-
-        if stream_config:
-            stream_handler = logging.StreamHandler(stream=stream_config.get('stream'))
-            stream_handler.setLevel(stream_config.get('level', level))
-            stream_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            stream_handler.setFormatter(stream_formatter)
-            logger.addHandler(stream_handler)
-
+        logger.environment = environment
         _log_registy[name] = logger
         return logger
