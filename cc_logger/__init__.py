@@ -21,24 +21,11 @@ def sanitize_name(name):
     return _spaces_re.sub('_', name.strip())
 
 
-class CCLogstashLogger(DefaultLoggerClass):
-
-    def __init__(self, name, **kwargs):
-        if not isinstance(name, basestring):
-            raise TypeError('name must be of type string, received type %s', type(name))
-
-        if not name.strip():
-            raise ValueError('name must be non-empty')
-
-        self.name = sanitize_name(name)
-        logging.Logger.__init__(self, self.name, **kwargs)
-
+class CCLoggerAdapter(logging.LoggerAdapter):
     def event(self, event_name, **extra):
         event_name = sanitize_name(event_name)
         extra.update({
             'DTM_EVENT': event_name,
-            'app_name': self.name,
-            'environment': self.environment,
         })
         self.log(LOGSTASH, 'event: %s' % event_name, extra=extra)
 
@@ -46,10 +33,8 @@ class CCLogstashLogger(DefaultLoggerClass):
         timer_name = sanitize_name(timer_name)
         extra.update({
             'DTM_STATS': timer_name,
-            'app_name': self.name,
             'stat_value': timer_value,
             'stat_type': 'timer',
-            'environment': self.environment,
         })
         self.log(LOGSTASH, 'timer: %s: %s' % (timer_name, timer_value), extra=extra)
 
@@ -57,9 +42,7 @@ class CCLogstashLogger(DefaultLoggerClass):
         counter_name = sanitize_name(counter_name)
         extra.update({
             'DTM_STATS': counter_name,
-            'app_name': self.name,
             'stat_type': 'counter',
-            'environment': self.environment,
         })
         self.log(LOGSTASH, 'counter: %s' % counter_name, extra=extra)
 
@@ -67,15 +50,10 @@ class CCLogstashLogger(DefaultLoggerClass):
         gauge_name = sanitize_name(gauge_name)
         extra.update({
             'DTM_STATS': gauge_name,
-            'app_name': self.name,
             'stat_value': gauge_value,
             'stat_type': 'gauge',
-            'environment': self.environment,
         })
         self.log(LOGSTASH, 'gauge: %s' % gauge_name, extra=extra)
-
-
-logging.setLoggerClass(CCLogstashLogger)
 
 
 def create_logger(name, environment='', level=None):
@@ -97,6 +75,8 @@ def create_logger(name, environment='', level=None):
         u'disable_existing_loggers': False,
     }
 
+    name = sanitize_name(name)
+
     if name in _log_registy:
         return _log_registy[name]
 
@@ -115,5 +95,6 @@ def create_logger(name, environment='', level=None):
     with _log_lock:
         logger = logging.getLogger(name)
         logger.environment = environment
-        _log_registy[name] = logger
-        return logger
+        adapter = CCLoggerAdapter(logger, {'environment': environment})
+        _log_registy[name] = adapter
+        return adapter
