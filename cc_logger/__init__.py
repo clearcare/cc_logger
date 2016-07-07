@@ -6,6 +6,8 @@ from logstash_formatter import LogstashFormatter
 
 from threading import Lock
 
+from .loggers import sanitize_name
+
 _log_lock = Lock()
 _log_registy = {}
 
@@ -16,10 +18,6 @@ LOGSTASH = logging.INFO + 1
 logging.addLevelName(LOGSTASH, 'LOGSTASH')
 
 _spaces_re = re.compile(r'\s+')
-
-
-def sanitize_name(name):
-    return _spaces_re.sub('_', name.strip())
 
 
 class CCLogstashLogger(DefaultLoggerClass):
