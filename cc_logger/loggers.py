@@ -103,7 +103,7 @@ def create_logger(name, environment='', level=None):
             u'console': {
                 u'class': u'logging.StreamHandler',
                 u'level': u'DEBUG',
-                u'formatter': u'logstashformatter',
+                u'formatter': u'json',
                 u'stream': u'ext://sys.stdout',
             },
         },
