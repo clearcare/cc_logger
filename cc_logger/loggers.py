@@ -87,11 +87,16 @@ class CCLoggerAdapter(logging.LoggerAdapter):
 
 
 def create_logger(name, environment='', level=None):
+    LOGGLY_TOKEN = '9e752df0-bd82-464d-a3a5-880a4be77554'
+
     base_config = {
         u'version': 1,
         u'formatters': {
             u'logstashformatter': {
                 u'()': u'cc_logger.formatters.CCFormatter'
+            },
+            u'json': {
+                u'format': u'{"loggerName": "%(name)s", "asciTime": "%(asctime)s", "fileName": "%(filename)s", "logRecordCreationTime": "%(created)f", "functionName": "%(funcName)s", "levelNo": "%(levelno)s", "lineNo": "%(lineno)d", "time": "%(msecs)d", "levelName": "%(levelname)s", "message": "%(message)s"}'
             },
         },
         u'handlers': {
