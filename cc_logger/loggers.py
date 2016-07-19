@@ -21,35 +21,31 @@ def sanitize_name(name):
 class CCLoggerAdapter(logging.LoggerAdapter):
 
     def process(self, msg, kwargs):
-        if 'extra' not in kwargs:
-            kwargs['extra'] = {}
+        """Flatten the log message so we can support arbitrary kwargs as well as the `extra` dict.
 
-        kwargs['extra'].update(self.extra)
+        ::
 
-        return msg, kwargs
+            log.event('something', when="now", why="just because")
+            log.info('booya', level=1, extra={'foo': 'bar', 'srsly': True})
+
+        All keys and values will be flattened into a single level:
+
+            {"DTM_EVENT": "something", "when": "now", "why": "just_because"}
+            {"DTM_EVENT": "booya", "level": 1, "foo": "bar", "srsly": true}
+        """
+        extra = kwargs.pop('extra', {})
+        extra.update(kwargs)
+        extra.update(self.extra)
+        return msg, {'extra': extra}
 
     def event(self, event_name, level=default_level, **kwargs):
         event_name = sanitize_name(event_name)
-        if 'extra' not in kwargs:
-            kwargs['extra'] = {}
-
-        if not isinstance(kwargs['extra'], dict):
-            raise TypeError('The extra kwarg must be a dictionary.')
-
-        kwargs['extra'].update({
-            'DTM_EVENT': event_name,
-        })
+        kwargs['DTM_EVENT'] = event_name
         self.log(level, 'event: %s' % event_name, **kwargs)
 
     def timer(self, timer_name, timer_value, level=default_level, **kwargs):
         timer_name = sanitize_name(timer_name)
-        if 'extra' not in kwargs:
-            kwargs['extra'] = {}
-
-        if not isinstance(kwargs['extra'], dict):
-            raise TypeError('The extra kwarg must be a dictionary.')
-
-        kwargs['extra'].update({
+        kwargs.update({
             'DTM_STATS': timer_name,
             'stat_value': timer_value,
             'stat_type': 'timer',
@@ -58,13 +54,7 @@ class CCLoggerAdapter(logging.LoggerAdapter):
 
     def counter(self, counter_name, level=default_level, **kwargs):
         counter_name = sanitize_name(counter_name)
-        if 'extra' not in kwargs:
-            kwargs['extra'] = {}
-
-        if not isinstance(kwargs['extra'], dict):
-            raise TypeError('The extra kwarg must be a dictionary.')
-
-        kwargs['extra'].update({
+        kwargs.update({
             'DTM_STATS': counter_name,
             'stat_type': 'counter',
         })
@@ -72,13 +62,7 @@ class CCLoggerAdapter(logging.LoggerAdapter):
 
     def gauge(self, gauge_name, gauge_value, level=default_level, **kwargs):
         gauge_name = sanitize_name(gauge_name)
-        if 'extra' not in kwargs:
-            kwargs['extra'] = {}
-
-        if not isinstance(kwargs['extra'], dict):
-            raise TypeError('The extra kwarg must be a dictionary.')
-
-        kwargs['extra'].update({
+        kwargs.update({
             'DTM_STATS': gauge_name,
             'stat_value': gauge_value,
             'stat_type': 'gauge',
@@ -86,7 +70,16 @@ class CCLoggerAdapter(logging.LoggerAdapter):
         self.log(level, 'gauge: %s' % gauge_name, **kwargs)
 
 
-def create_logger(name, environment='', level=None):
+def get_cached_logger(name):
+    """Lookup loggers in a global dict.
+
+    Delegate this to a function mostly for testing purposes.
+
+    """
+    return _log_registy.get(name, None)
+
+
+def create_logger(name, environment='', level=default_level):
     base_config = {
         u'version': 1,
         u'formatters': {
@@ -107,11 +100,9 @@ def create_logger(name, environment='', level=None):
 
     name = sanitize_name(name)
 
-    if name in _log_registy:
-        return _log_registy[name]
-
-    if level is None:
-        level = default_level
+    log_adapter = get_cached_logger(name)
+    if log_adapter:
+        return log_adapter
 
     # Set up a new logger and add all of the handlers to it.
     loggers = base_config.get(u'loggers', {})
@@ -125,6 +116,6 @@ def create_logger(name, environment='', level=None):
     with _log_lock:
         logger = logging.getLogger(name)
         logger.environment = environment
-        adapter = CCLoggerAdapter(logger, {'environment': environment})
-        _log_registy[name] = adapter
-        return adapter
+        log_adapter = CCLoggerAdapter(logger, {'environment': environment})
+        _log_registy[name] = log_adapter
+        return log_adapter
