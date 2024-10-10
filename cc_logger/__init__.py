@@ -1,6 +1,7 @@
 import logging
 import logging.handlers
 import re
+from six import string_types
 
 from logstash_formatter import LogstashFormatter
 
@@ -23,7 +24,7 @@ _spaces_re = re.compile(r'\s+')
 class CCLogstashLogger(DefaultLoggerClass):
 
     def __init__(self, name, **kwargs):
-        if not isinstance(name, basestring):
+        if not isinstance(name, string_types):
             raise TypeError('name must be of type string, received type %s', type(name))
 
         if not name.strip():
